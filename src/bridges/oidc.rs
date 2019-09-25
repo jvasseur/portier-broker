@@ -100,6 +100,11 @@ pub fn auth(ctx_handle: &ContextHandle, email_addr: &Rc<EmailAddress>, link: &Li
                 }
             }
             if provider_origin == GOOGLE_IDP_ORIGIN {
+                let client_id = match ctx.app.google {
+                    Some(GoogleConfig { ref client_id }) => client_id,
+                    None => return Box::new(future::err(BrokerError::ProviderCancelled)),
+                };
+
                 OidcBridgeData {
                     link: link.clone(),
                     origin: provider_origin,
@@ -267,6 +272,22 @@ pub fn callback(ctx_handle: &ContextHandle) -> HandlerResult {
         check_token_field!(iat <= now, "iat", descr);
 
         match bridge_data.link.rel {
+            Relation::OidcIssuer => {
+                if bridge_data.origin == GOOGLE_IDP_ORIGIN {
+                    // Check `email` after additional Google-specific normalization.
+                    let email_addr: EmailAddress = match email.parse() {
+                        Ok(email_addr) => email_addr,
+                        Err(_) => return Err(BrokerError::ProviderInput(format!(
+                            "failed to parse email in {}", descr))),
+                    };
+                    let google_email_addr = email_addr.normalize_google();
+                    let expected = data.email_addr.normalize_google();
+                    check_token_field!(google_email_addr == expected, "email", descr);
+                } else {
+                    // `email` should match the normalized email, as we sent it to the IdP.
+                    check_token_field!(email == data.email_addr.as_str(), "email", descr);
+                }
+            },
             Relation::Portier => {
                 // `email` should match the normalized email, as we sent it to the IdP.
                 check_token_field!(email == data.email_addr.as_str(), "email", descr);

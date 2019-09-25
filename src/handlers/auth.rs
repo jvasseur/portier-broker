@@ -176,7 +176,8 @@ pub fn auth(ctx_handle: &ContextHandle) -> HandlerResult {
     let f = f.and_then(move |links| {
         match links.first() {
             // Portier and Google providers share an implementation
-            Some(link @ &Link { rel: Relation::Portier, .. })
+            Some(link @ &Link { rel: Relation::OidcIssuer, .. })
+                | Some(link @ &Link { rel: Relation::Portier, .. })
                 | Some(link @ &Link { rel: Relation::Google, .. })
                 => bridges::oidc::auth(&ctx_handle2, &email_addr2, link),
             _ => Box::new(future::err(BrokerError::ProviderCancelled)),

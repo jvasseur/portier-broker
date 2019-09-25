@@ -9,6 +9,7 @@ use std::str::FromStr;
 use store_cache::{CacheKey, fetch_json_url};
 use url::Url;
 
+
 /// Portier webfinger relation
 pub const WEBFINGER_OIDC_ISSUER_REL: &str = "http://openid.net/specs/connect/1.0/issuer";
 /// Portier webfinger relation
