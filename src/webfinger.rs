@@ -9,7 +9,8 @@ use std::str::FromStr;
 use store_cache::{CacheKey, fetch_json_url};
 use url::Url;
 
-
+/// Portier webfinger relation
+pub const WEBFINGER_OIDC_ISSUER_REL: &str = "http://openid.net/specs/connect/1.0/issuer";
 /// Portier webfinger relation
 pub const WEBFINGER_PORTIER_REL: &str = "https://portier.io/specs/auth/1.0/idp";
 /// Portier + Google webfinger relation
@@ -35,6 +36,7 @@ pub struct LinkDef {
 /// Parsed and validated webfinger relation
 #[derive(Clone,Copy,Debug,Eq,PartialEq,Serialize,Deserialize)]
 pub enum Relation {
+    OidcIssuer,
     Portier,
     Google,
 }
@@ -43,6 +45,7 @@ impl FromStr for Relation {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Relation, &'static str> {
         match s {
+            WEBFINGER_OIDC_ISSUER_REL => Ok(Relation::OidcIssuer),
             WEBFINGER_PORTIER_REL => Ok(Relation::Portier),
             WEBFINGER_GOOGLE_REL => Ok(Relation::Google),
             _ => Err("unsupported value"),
@@ -93,6 +96,7 @@ pub fn query(app: &Rc<Config>, email_addr: &EmailAddress)
 
     let url = match Url::parse_with_params(&url, &[
         ("resource", format!("acct:{}", email_addr).as_str()),
+        ("rel", WEBFINGER_OIDC_ISSUER_REL),
         ("rel", WEBFINGER_PORTIER_REL),
         ("rel", WEBFINGER_GOOGLE_REL),
     ]) {

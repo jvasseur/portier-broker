@@ -92,6 +92,29 @@ pub fn auth(ctx_handle: &ContextHandle, email_addr: &Rc<EmailAddress>, link: &Li
             format!("invalid href (validation failed): {}", link.href)))),
     };
     let bridge_data = Rc::new(match link.rel {
+        Relation::OidcIssuer => {
+            #[cfg(not(feature = "insecure"))] {
+                if link.href.scheme() != "https" {
+                    return Box::new(future::err(BrokerError::Provider(
+                        format!("invalid href (not HTTPS): {}", link.href))));
+                }
+            }
+            if provider_origin == GOOGLE_IDP_ORIGIN {
+                OidcBridgeData {
+                    link: link.clone(),
+                    origin: provider_origin,
+                    client_id: client_id.clone(),
+                    nonce: provider_nonce,
+                }
+            } else {
+                OidcBridgeData {
+                    link: link.clone(),
+                    origin: provider_origin,
+                    client_id: ctx.app.public_url.clone(),
+                    nonce: provider_nonce,
+                }
+            }
+        },
         Relation::Portier => {
             #[cfg(not(feature = "insecure"))] {
                 if link.href.scheme() != "https" {
